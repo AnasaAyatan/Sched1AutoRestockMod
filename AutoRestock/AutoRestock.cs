@@ -789,8 +789,19 @@ namespace AutoRestock
             }
         }
 
+        // Check essential gameplay services before attempting startup on an
+        // updated game's scene callback. Avoid creating a manager in the menu.
+        public static bool DependenciesReady()
+        {
+            return NetworkSingleton<TimeManager>.Instance != null
+                && NetworkSingleton<MoneyManager>.Instance != null
+                && SaveManager.Instance != null;
+        }
+
         public static void Initialize()
         {
+            if (isInitialized || !DependenciesReady())
+                return;
             try
             {
                 melonPrefs = MelonPreferences.GetCategory("AutoRestock");
@@ -1046,16 +1057,14 @@ namespace AutoRestock
 
         private static void OnDayPass()
         {
-            if (isInitialized && InstanceFinder.IsServer)
-            {
-                NetworkSingleton<MessagingManager>.Instance.SendMessage(
-                    new Message(GetReceipt(), Message.ESenderType.Other, true, -1),
-                    true,
-                    oscar.ID);
+             if (isInitialized && InstanceFinder.IsServer)
+                 {
+                     MelonLogger.Msg(
+                    "[AutoRestock] Daily receipt:\n" + GetReceipt());
 
-                ledger.Clear();
-                ledgerDay = timeManager.CurrentDay;
-            }
+                    ledger.Clear();
+                    ledgerDay = timeManager.CurrentDay;
+                }
         }
 
         private static string GetSaveString()
