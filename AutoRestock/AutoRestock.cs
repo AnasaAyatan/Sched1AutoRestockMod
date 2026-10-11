@@ -1098,14 +1098,45 @@ namespace AutoRestock
 
         private static void OnDayPass()
         {
-             if (isInitialized && InstanceFinder.IsServer)
-                 {
-                     MelonLogger.Msg(
-                    "[AutoRestock] Daily receipt:\n" + GetReceipt());
+            if (!isInitialized || !InstanceFinder.IsServer)
+                return;
 
-                    ledger.Clear();
-                    ledgerDay = timeManager.CurrentDay;
+            // Preserve the report in the MelonLoader log even if phone messaging
+            // is unavailable during a scene transition or on a new game build.
+            string report = GetReceipt();
+            MelonLogger.Msg("[AutoRestock] Daily receipt:\n" + report);
+
+            try
+            {
+                var conversation = oscar?.MSGConversation;
+                var messagingManager = NetworkSingleton<MessagingManager>.Instance;
+                if (conversation != null && messagingManager != null &&
+                    !string.IsNullOrEmpty(conversation.ConversationId))
+                {
+                    // 0.4.7 replaces the original SendMessage(message, notify,
+                    // npcId) RPC with SendMessage_Server(message, notify,
+                    // conversationId). Oscar remains the sender.
+                    messagingManager.SendMessage_Server(
+                        new Message(report, Message.ESenderType.Other, true, -1),
+                        true,
+                        conversation.ConversationId);
+                    Utils.Log("Oscar daily report submitted to phone messaging.");
                 }
+                else
+                {
+                    Utils.Warn("Oscar's conversation is unavailable; daily report saved to log only.");
+                }
+            }
+            catch (Exception e)
+            {
+                Utils.Warn("Oscar's in-game report failed; the log still contains the full report.");
+                Utils.PrintException(e);
+            }
+            finally
+            {
+                ledger.Clear();
+                ledgerDay = timeManager.CurrentDay;
+            }
         }
 
         private static string GetSaveString()
