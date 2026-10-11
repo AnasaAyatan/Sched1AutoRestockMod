@@ -14,7 +14,7 @@ Experimental community-maintained compatibility branch for **Schedule I v0.4.7f1
 - Uses the original mod's funds, pricing, and restocking logic.
 - Handles restocking transactions by property.
 - Adds fallback startup logic for game v0.4.7 and guards against uninitialized NPC IDs or save identifiers.
-- **New experimental daily report:** itemized purchases, property subtotals, unit quantities, undiscounted list prices, savings, charged totals, and cash/bank breakdown. Reports are currently written to the **MelonLoader log**, not to the in-game phone.
+- **New experimental daily report:** itemized purchases, property subtotals, unit quantities, undiscounted list prices, savings, charged totals, and cash/bank breakdown. Reports are always written to the **MelonLoader log**; v1.1.7 now also **attempts Oscar's in-game phone delivery** using the updated messaging API, pending compile and runtime validation.
 
 ### Example daily report (illustrative figures)
 
@@ -46,7 +46,7 @@ The report uses the existing transaction ledger. **Savings** are calculated as `
 | MelonLoader v0.7.3 Open-Beta | Used during the verified test |
 | Restocking manager initialization | Verified |
 | Detailed daily report | Source updated; testing pending |
-| Oscar in-game phone message | **Not yet restored**; messaging API changed |
+| Oscar in-game phone message | v1.1.7 implementation committed; compile/gameplay test pending |
 | Mono game branch | Not tested for this compatibility fork |
 
 The October 11 log also showed a separate **AutoLaunder** missing-method error; this fork does not fix other mods.
@@ -76,14 +76,14 @@ dotnet build .\AutoRestock\AutoRestock.csproj -c IL2CPP -p:SkipModPackaging=true
 5. Check `MelonLoader/Logs` for `[AutoRestock] AutoRestock manager initialized.`, transaction lines, and the daily receipt after the next in-game day.
 6. Report compile/runtime errors with a fresh MelonLoader log, redacting any personal identifiers.
 
-**Known limitations and cautions:** Phone-message delivery is pending a compatible v0.4.7 messaging API. The original project has peer-to-peer transaction handling; avoid untrusted multiplayer sessions until sender validation has been audited. Test discount settings carefully, as a discount of `1` was observed yielding zero-cost restocks in the user's prior test.
+**Known limitations and cautions:** Phone-message delivery uses an experimental v0.4.7 messaging API call; its compile and runtime behavior remain unverified. The original project has peer-to-peer transaction handling; avoid untrusted multiplayer sessions until sender validation has been audited. Test discount settings carefully, as a discount of `1` was observed yielding zero-cost restocks in the user's prior test.
 
 ## Project history
 
 - **v1.1.5 (upstream):** Original baseline by lasersquid.
 - **v1.1.6 experimental:** IL2CPP v0.4.7 scene fallback, startup guards, replacement of broken receipt message call with log output, and a detailed reporting update pending runtime validation.
 
-See [CHANGELOG.md](CHANGELOG.md) for update notes and [docs/TESTING.md](docs/TESTING.md) for a validation checklist. Bug reports and pull requests should target the compatibility branch until the changes are proven stable.
+- **v1.1.7 experimental:** detailed reporting and attempted Oscar phone delivery with a per-conversation identifier; awaiting testing.\n\nSee [CHANGELOG.md](CHANGELOG.md) for update notes and [docs/TESTING.md](docs/TESTING.md) for a validation checklist. Bug reports and pull requests should target the compatibility branch until the changes are proven stable.
 
 ## Original project links
 
