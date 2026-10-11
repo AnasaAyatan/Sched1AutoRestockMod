@@ -798,62 +798,103 @@ namespace AutoRestock
                 && SaveManager.Instance != null;
         }
 
+        // Startup may be called repeatedly by the scene fallback. Only attach
+        // event handlers once all save and gameplay dependencies are ready.
         public static void Initialize()
         {
             if (isInitialized || !DependenciesReady())
                 return;
+
             try
             {
-                melonPrefs = MelonPreferences.GetCategory("AutoRestock");
-                timeManager = NetworkSingleton<TimeManager>.Instance;
-                moneyManager = NetworkSingleton<MoneyManager>.Instance;
-                saveManager = SaveManager.Instance;
+                var loadedPath = LoadManager.Instance?.LoadedGameFolderPath;
+                if (string.IsNullOrWhiteSpace(loadedPath))
+                    return;
 
-                ledgerDay = timeManager.CurrentDay;
-                oscar = UnityEngine.Object.FindObjectsOfType<NPC>(true).FirstOrDefault((npc) => npc.ID == "oscar_holland");
-
-                playerClickedSlot = null;
-                doRestockPlayerClickedSlot = false;
-
-                playerStationOperationSlots = new List<ItemSlot>();
-                coroutines = new Dictionary<Transaction, object>();
-
-                exclusiveLock = new Mutex();
-
-                timeManager.onDayPass += new Action(Manager.OnDayPass);
-                saveManager.onSaveStart.AddListener(Utils.ToUnityAction(Manager.OnSaveStart));
-
-                if (InstanceFinder.IsServer)
+                // Some NPCs exist in the scene before their backing IL2CPP data
+                // is initialized. Accessing ID on those objects can throw.
+                NPC readyOscar = null;
+                foreach (NPC npc in UnityEngine.Object.FindObjectsOfType<NPC>(true))
                 {
-                    ledgerString = $"{GetSaveString()}_ledger";
-                    transactionString = $"{GetSaveString()}_inprogress";
+                    if (npc == null)
+                        continue;
+                    try
+                    {
+                        if (npc.ID == "oscar_holland")
+                        {
+                            readyOscar = npc;
+                            break;
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // Retry on a later scene-fallback tick.
+                    }
+                }
+                if (readyOscar == null)
+                    return;
 
-                    if (!melonPrefs.HasEntry(ledgerString))
-                    {
-                        melonPrefs.CreateEntry<string>(ledgerString, "[]", "", true);
-                    }
-                    if (!melonPrefs.HasEntry(transactionString))
-                    {
-                        melonPrefs.CreateEntry<string>(transactionString, "[]", "", true);
-                    }
-                    melonPrefs.LoadFromFile(false);
-                
-                    ledger = JsonConvert.DeserializeObject<List<Transaction>>(melonPrefs.GetEntry<string>(ledgerString).Value);
+                // Avoid creating preferences entries with missing or invalid
+                // per-save identifiers while a game is loading.
+                var saveKey = GetSaveString();
+                if (string.IsNullOrWhiteSpace(saveKey))
+                    return;
+
+                var dayManager = NetworkSingleton<TimeManager>.Instance;
+                var fundsManager = NetworkSingleton<MoneyManager>.Instance;
+                var currentSaveManager = SaveManager.Instance;
+                var prefs = MelonPreferences.GetCategory("AutoRestock");
+                var server = InstanceFinder.IsServer;
+                var dayLedger = new List<Transaction>();
+                string nextLedgerKey = null;
+                string nextTransactionKey = null;
+
+                if (server)
+                {
+                    nextLedgerKey = saveKey + "_ledger";
+                    nextTransactionKey = saveKey + "_inprogress";
+                    if (!prefs.HasEntry(nextLedgerKey))
+                        prefs.CreateEntry<string>(nextLedgerKey, "[]", "", true);
+                    if (!prefs.HasEntry(nextTransactionKey))
+                        prefs.CreateEntry<string>(nextTransactionKey, "[]", "", true);
+                    prefs.LoadFromFile(false);
+                    dayLedger = JsonConvert.DeserializeObject<List<Transaction>>(
+                        prefs.GetEntry<string>(nextLedgerKey).Value) ?? new List<Transaction>();
                 }
 
+                melonPrefs = prefs;
+                timeManager = dayManager;
+                moneyManager = fundsManager;
+                saveManager = currentSaveManager;
+                oscar = readyOscar;
+                ledgerDay = timeManager.CurrentDay;
+                ledger = dayLedger;
+                ledgerString = nextLedgerKey;
+                transactionString = nextTransactionKey;
+                playerClickedSlot = null;
+                doRestockPlayerClickedSlot = false;
+                playerStationOperationSlots = new List<ItemSlot>();
+                coroutines = new Dictionary<Transaction, object>();
+                exclusiveLock = new Mutex();
+
+                // Attach callbacks only after successful initialization.
+                timeManager.onDayPass += new Action(Manager.OnDayPass);
+                saveManager.onSaveStart.AddListener(Utils.ToUnityAction(Manager.OnSaveStart));
                 isInitialized = true;
-                Utils.Log($"AutoRestock manager initialized.");
+                Utils.Log("AutoRestock manager initialized.");
             }
             catch (Exception e)
             {
                 Utils.PrintException(e);
+                return;
             }
 
             try
             {
-                if (InstanceFinder.IsServer)
+                if (InstanceFinder.IsServer && !string.IsNullOrEmpty(transactionString))
                 {
-                    List<Transaction> pendingTransactions = JsonConvert.DeserializeObject<List<Transaction>>(melonPrefs.GetEntry<string>(transactionString).Value);
+                    var pendingTransactions = JsonConvert.DeserializeObject<List<Transaction>>(
+                        melonPrefs.GetEntry<string>(transactionString).Value) ?? new List<Transaction>();
                     if (pendingTransactions.Count > 0)
                     {
                         Utils.Log($"Completing {pendingTransactions.Count} pending transaction{(pendingTransactions.Count == 1 ? "" : "s")}.");
