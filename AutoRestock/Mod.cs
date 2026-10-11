@@ -10,7 +10,7 @@ using Steamworks;
 using Il2CppSteamworks;
 #endif
 
-[assembly: MelonInfo(typeof(AutoRestock.AutoRestockMod), "AutoRestock", "1.1.6", "lasersquid", null)]
+[assembly: MelonInfo(typeof(AutoRestock.AutoRestockMod), "AutoRestock", "1.1.6", "lasersquid & AnasaAyatan", null)]
 [assembly: MelonGame("TVGS", "Schedule I")]
 
 namespace AutoRestock
