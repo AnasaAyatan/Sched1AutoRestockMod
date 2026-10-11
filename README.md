@@ -6,7 +6,7 @@ Experimental community-maintained compatibility branch for **Schedule I v0.4.7f1
 **Compatibility fork:** [AnasaAyatan / Sched1AutoRestockMod](https://github.com/AnasaAyatan/Sched1AutoRestockMod)  
 **Credits:** Original design and implementation by **lasersquid**; v0.4.7 compatibility maintenance by **AnasaAyatan**.
 
-> **Development status:** The startup fix and automatic restocking were observed working in the October 11, 2026 game log on v0.4.7f12. The new detailed receipt and combined author metadata have been committed but **not yet compiled or game-tested**. Do not treat this branch as a verified public release.
+> **Development status:** The startup fix and automatic restocking were observed working in the October 11, 2026 game log on v0.4.7f12. The new detailed receipt and combined author metadata have been committed but compiled and tested successfully for Oscar phone delivery on October 11, 2026. Do not treat this branch as a verified public release.
 
 ## Features
 
@@ -14,7 +14,7 @@ Experimental community-maintained compatibility branch for **Schedule I v0.4.7f1
 - Uses the original mod's funds, pricing, and restocking logic.
 - Handles restocking transactions by property.
 - Adds fallback startup logic for game v0.4.7 and guards against uninitialized NPC IDs or save identifiers.
-- **New experimental daily report:** itemized purchases, property subtotals, unit quantities, undiscounted list prices, savings, charged totals, and cash/bank breakdown. Reports are always written to the **MelonLoader log**; v1.1.7 now also **attempts Oscar's in-game phone delivery** using the updated messaging API, pending compile and runtime validation.
+- **New experimental daily report:** itemized purchases, property subtotals, unit quantities, undiscounted list prices, savings, charged totals, and cash/bank breakdown. Reports are always written to the **MelonLoader log**; v1.1.7 now also **attempts Oscar's in-game phone delivery** using the updated messaging API, confirmed in one in-game test session.
 
 ### Example daily report (illustrative figures)
 
@@ -45,8 +45,8 @@ The report uses the existing transaction ledger. **Savings** are calculated as `
 | Schedule I v0.4.7f12, IL2CPP | Restocking verified in user-provided October 11 log |
 | MelonLoader v0.7.3 Open-Beta | Used during the verified test |
 | Restocking manager initialization | Verified |
-| Detailed daily report | Source updated; testing pending |
-| Oscar in-game phone message | v1.1.7 implementation committed; compile/gameplay test pending |
+| Detailed daily report | Observed working in October 11 game log |
+| Oscar in-game phone message | v1.1.7 implementation committed; User confirmed message in-game October 11 |
 | Mono game branch | Not tested for this compatibility fork |
 
 The October 11 log also showed a separate **AutoLaunder** missing-method error; this fork does not fix other mods.
@@ -93,3 +93,7 @@ dotnet build .\AutoRestock\AutoRestock.csproj -c IL2CPP -p:SkipModPackaging=true
 - [Thunderstore Mono](https://thunderstore.io/c/schedule-i/p/lasersquid/AutoRestockMono/)
 
 This fork is an independent compatibility effort and is not an official release of the original mod or the game.
+
+## Verified October 11, 2026 runtime test
+
+On Schedule I v0.4.7f12 with MelonLoader 0.7.3 Open-Beta, AutoRestock v1.1.7 initialized, completed automatic restocking and generated a detailed report covering 144 transactions, 2,590 units, $31,100 list value and $0 charged (discount setting 1). The log recorded successful submission to Oscar's phone conversation, and the user confirmed that Oscar's message appeared in-game. This verifies the phone messaging path in this game session, not compatibility with future versions or multiplayer. Separate AutoLaunder messaging errors and Van(Clone) component warnings remain outstanding.
