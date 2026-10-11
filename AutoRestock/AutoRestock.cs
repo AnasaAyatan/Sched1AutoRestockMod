@@ -1165,71 +1165,92 @@ namespace AutoRestock
             return JsonConvert.SerializeObject(ledger);
         }
 
+        // Detailed transaction report: derives prices, discounts and charged
+        // amounts from the existing ledger without changing payment behavior.
         private static string GetReceipt()
         {
-            if (isInitialized)
+            if (!isInitialized || ledger == null)
+                return "AutoRestock is not initialized.";
+
+            var report = new StringBuilder();
+            report.AppendLine($"Oscar's daily restocking report - {ledgerDay}");
+            report.AppendLine("================================");
+            if (ledger.Count == 0)
             {
-                string receipt = $"Restock receipt for {ledgerDay}:\n\n";
-                float grandTotal = 0f;
-                if (ledger.Count > 0)
+                report.AppendLine("No restocking purchases recorded today.");
+                return report.ToString();
+            }
+
+            float grossTotal = 0f;
+            float discountTotal = 0f;
+            float chargedTotal = 0f;
+            int itemCount = 0;
+            int cashOrders = 0;
+            int bankOrders = 0;
+            float cashTotal = 0f;
+            float bankTotal = 0f;
+
+            foreach (var propertyGroup in ledger.GroupBy(t => t.slotID?.property ?? "Unknown property").OrderBy(g => g.Key))
+            {
+                float propertyGross = 0f;
+                float propertyCharged = 0f;
+                int propertyItems = 0;
+                report.AppendLine();
+                report.AppendLine($"PROPERTY: {propertyGroup.Key}");
+                foreach (var itemGroup in propertyGroup.GroupBy(t => t.itemID).OrderBy(g => g.Key))
                 {
-                    Dictionary<string, Dictionary<string, float>> itemTotals = new Dictionary<string, Dictionary<string, float>>();
-                    Dictionary<string, Dictionary<string, int>> itemQuantities = new Dictionary<string, Dictionary<string, int>>();
-                    Dictionary<string, float> itemPrices = new Dictionary<string, float>();
-                    Dictionary<string, float> totalCosts = new Dictionary<string, float>();
-
-                    foreach (var transaction in ledger)
+                    string itemName = itemGroup.Key;
+                    try
                     {
-                        if (!itemTotals.ContainsKey(transaction.slotID.property))
-                        {
-                            itemTotals[transaction.slotID.property] = new Dictionary<string, float>();
-                        }
-                        if (!itemTotals[transaction.slotID.property].ContainsKey(transaction.itemID))
-                        {
-                            itemTotals[transaction.slotID.property][transaction.itemID] = 0f;
-                        }
-                        if (!itemQuantities.ContainsKey(transaction.slotID.property))
-                        {
-                            itemQuantities[transaction.slotID.property] = new Dictionary<string, int>();
-                        }
-                        if (!itemQuantities[transaction.slotID.property].ContainsKey(transaction.itemID))
-                        {
-                            itemQuantities[transaction.slotID.property][transaction.itemID] = 0;
-                        }
-                        itemQuantities[transaction.slotID.property][transaction.itemID] += transaction.quantity;
-                        itemTotals[transaction.slotID.property][transaction.itemID] += transaction.totalCost;
-                        itemPrices[transaction.itemID] = transaction.unitPrice;
+                        var definition = Registry.GetItem(itemGroup.Key);
+                        if (definition != null)
+                            itemName = definition.Name;
+                    }
+                    catch (Exception)
+                    {
+                        // A removed item definition should not prevent a report.
                     }
 
-                    foreach (string property in itemTotals.Keys)
-                    {
-                        float propertyTotal = 0f;
-                        receipt += $"{property}: \n";
-                        foreach (var entry in itemQuantities[property])
-                        {
-                            string name = entry.Key;
-                            float quantity = entry.Value;
-                            float total = itemTotals[property][name];
-
-                            string prettyName = Registry.GetItem(name).Name;
-                            receipt += $"  {prettyName} x{quantity} = ${total}\n";
-                            propertyTotal += total;
-                        }
-                        receipt += "=====================\n";
-                        receipt += $"  Property total: ${propertyTotal}\n\n";
-                        grandTotal += propertyTotal;
-                    }
+                    var count = itemGroup.Sum(t => t.quantity);
+                    var gross = itemGroup.Sum(t => t.unitPrice * t.quantity);
+                    var charged = itemGroup.Sum(t => t.totalCost);
+                    var saved = gross - charged;
+                    report.AppendLine($"  {itemName} x{count}: list ${gross:F2}, discount ${saved:F2}, paid ${charged:F2}");
+                    propertyItems += count;
+                    propertyGross += gross;
+                    propertyCharged += charged;
                 }
-                receipt += "=====================\n";
-                receipt += $"  Grand total: ${grandTotal}\n\n";
-                receipt += $"Oscar says thank you for your business! :)";
+                report.AppendLine($"  Property subtotal: {propertyItems} units | list ${propertyGross:F2} | saved ${propertyGross - propertyCharged:F2} | paid ${propertyCharged:F2}");
+                grossTotal += propertyGross;
+                chargedTotal += propertyCharged;
+                itemCount += propertyItems;
+            }
 
-                return receipt;
-            }
-            else
+            discountTotal = grossTotal - chargedTotal;
+            foreach (var transaction in ledger)
             {
-                return "AutoRestock not initialized!";
+                if (transaction.useCash)
+                {
+                    cashOrders++;
+                    cashTotal += transaction.totalCost;
+                }
+                else
+                {
+                    bankOrders++;
+                    bankTotal += transaction.totalCost;
+                }
             }
+
+            report.AppendLine();
+            report.AppendLine("DAILY TOTALS");
+            report.AppendLine($"Transactions: {ledger.Count} | Units purchased: {itemCount}");
+            report.AppendLine($"List price: ${grossTotal:F2}");
+            report.AppendLine($"Discounts / savings: ${discountTotal:F2}");
+            report.AppendLine($"Amount charged: ${chargedTotal:F2}");
+            report.AppendLine($"Cash: ${cashTotal:F2} ({cashOrders} transactions)");
+            report.AppendLine($"Bank: ${bankTotal:F2} ({bankOrders} transactions)");
+            report.AppendLine("Oscar says thank you for your business!");
+            return report.ToString();
         }
     }
 
