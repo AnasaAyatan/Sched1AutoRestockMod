@@ -1,4 +1,4 @@
-# Changelog
+# Changelog\n\n## 1.1.7 — experimental, pending build and game test\n\n- Updated MelonLoader mod version and project version to 1.1.7.\n- Preserved original creator attribution alongside compatibility maintainer.\n- Implemented an **experimental** Oscar in-game daily report using the v0.4.7 `MessagingManager.SendMessage_Server` and `MSGConversation.ConversationId`.\n- Log output remains the fallback and ledger resets even if phone delivery fails.\n- Phone compatibility and message formatting are **not yet validated**.\n
 
 ## 1.1.6 compatibility work — experimental, unreleased
 
