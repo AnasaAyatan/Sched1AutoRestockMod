@@ -1,24 +1,31 @@
-# Validation guide — 0.4.7f12
+# AutoRestock v1.1.7 testing checklist
 
-## Before testing
-- Back up your game save and installed AutoRestock DLL.
-- Confirm Schedule I reports v0.4.7f12 and MelonLoader starts.
-- Disable Vortex's old AutoRestock deployment and retain exactly one active DLL.
-- Compile from the repair branch with `-p:SkipModPackaging=true`.
+**Target:** Schedule I v0.4.7f12, IL2CPP, MelonLoader v0.7.3 Open-Beta.
 
-## Required tests
-1. Load a single-player save. Confirm `AutoRestock manager initialized.` appears once per loaded save.
-2. Restock supported inputs at two properties. Confirm item quantities and player balances match the logs.
-3. Test both cash and bank transactions. Check amounts deducted.
-4. Test discounts of 0 and any other supported configured values; confirm expected totals before publishing.
-5. Cross an in-game day boundary. Check the detailed receipt for item quantities, gross list prices, calculated savings, actual charges, property subtotals, and payment method totals.
-6. Save, exit to menu, reload, and repeat. Look for duplicate event subscriptions or duplicate reports.
-7. Start with an empty ledger and verify the report indicates no purchases.
-8. Check for NullReferenceException, MissingMethodException, and errors about empty MelonPreferences identifiers.
-9. Separately test host/client multiplayer only in a trusted session; audit sender authorization before wider distribution.
+## Setup
 
-## Expected report behavior
-The detailed receipt is always logged. Version 1.1.7 also attempts to send it through Oscar's in-game conversation using the new v0.4.7 messaging API. Verify compilation, in-game delivery, notification behavior and that the daily receipt is not duplicated. If delivery fails, inspect the log fallback.
+1. Back up the game save and existing AutoRestock DLL.
+2. Install one copy of the newly compiled `AutoRestockIL2CPP.dll`.
+3. Confirm the in-game mod manager shows version **1.1.7** and credits **lasersquid & AnasaAyatan**.
 
-## Reporting bugs
-Attach the latest `MelonLoader/Logs` file, game version, MelonLoader version, mod version, reproduction steps, expected and actual results, and relevant configuration (with personal information removed).
+## Functional checks
+
+- [x] Manager initializes after a save is loaded.
+- [x] Automatic restocking occurs on the tested game build.
+- [x] A detailed report is generated at an in-game day transition.
+- [x] Oscar sends the report to the in-game phone.
+- [x] The same report is available in MelonLoader's log.
+- [ ] Validate both cash and bank purchases with nonzero charges.
+- [ ] Check multiple discount configurations and their financial totals.
+- [ ] Verify save, exit to menu, reload and another day transition without duplicate messages.
+- [ ] Verify an empty-ledger day.
+- [ ] Test multiplayer host/client behavior with authorized players.
+- [ ] Recheck compatibility after future game updates.
+
+## Confirmed test: October 11, 2026
+
+The v1.1.7 session recorded 144 transactions, 2,590 restocked units, $31,100 list value and $0 charged under an intentionally configured full discount. The log recorded successful phone-message submission and the tester confirmed the message appeared in-game.
+
+## Reporting issues
+
+Provide the game version, MelonLoader version, AutoRestock version, reproduction steps and a redacted recent `MelonLoader/Logs` file. Do not share account credentials or game saves.
