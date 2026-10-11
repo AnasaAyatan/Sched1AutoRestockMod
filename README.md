@@ -1,22 +1,26 @@
-# AutoRestock — Schedule I compatibility fork
+# AutoRestock — Schedule I v0.4.7 Compatibility
 
-Experimental community-maintained compatibility branch for **Schedule I v0.4.7f12 (IL2CPP)**.
+An unofficial, community-maintained update of **AutoRestock**, built for **Schedule I v0.4.7f12 (IL2CPP)**.
 
-**Original mod:** [lasersquid / Sched1AutoRestockMod](https://github.com/lasersquid/Sched1AutoRestockMod)  
-**Compatibility fork:** [AnasaAyatan / Sched1AutoRestockMod](https://github.com/AnasaAyatan/Sched1AutoRestockMod)  
-**Credits:** Original design and implementation by **lasersquid**; v0.4.7 compatibility maintenance by **AnasaAyatan**.
+**Version:** 1.1.7  
+**Original creator:** [lasersquid](https://github.com/lasersquid/Sched1AutoRestockMod)  
+**Compatibility maintenance:** [AnasaAyatan](https://github.com/AnasaAyatan/Sched1AutoRestockMod)
 
-> **Development status:** The startup fix and automatic restocking were observed working in the October 11, 2026 game log on v0.4.7f12. The new detailed receipt and combined author metadata have been committed but compiled and tested successfully for Oscar phone delivery on October 11, 2026. Do not treat this branch as a verified public release.
+> This is a compatibility fork, not an official release by the original creator. Please respect the original project's redistribution permissions before repackaging or publishing binaries.
 
 ## Features
 
-- Automatically replenishes supported empty storage and production slots.
-- Uses the original mod's funds, pricing, and restocking logic.
-- Handles restocking transactions by property.
-- Adds fallback startup logic for game v0.4.7 and guards against uninitialized NPC IDs or save identifiers.
-- **New experimental daily report:** itemized purchases, property subtotals, unit quantities, undiscounted list prices, savings, charged totals, and cash/bank breakdown. Reports are always written to the **MelonLoader log**; v1.1.7 now also **attempts Oscar's in-game phone delivery** using the updated messaging API, confirmed in one in-game test session.
+- Automatically restocks supported empty storage and production slots.
+- Uses the existing restocking configuration, inventory and payment logic.
+- Groups daily purchases by property and item.
+- Sends a detailed daily business report through **Oscar's in-game phone conversation**.
+- Includes purchased quantities, list values, calculated discounts, actual charges, and cash/bank totals.
+- Writes a copy of the daily report to the MelonLoader log as a fallback.
+- Adds safeguards and a scene-based retry for initialization on Schedule I v0.4.7.
 
-### Example daily report (illustrative figures)
+## Daily business report
+
+At the in-game day transition, Oscar sends a report covering the previous day's restocking purchases. An example with illustrative prices:
 
 ```text
 Oscar's daily restocking report - Monday
@@ -36,64 +40,64 @@ Bank: $0.00 (0 transactions)
 Oscar says thank you for your business!
 ```
 
-The report uses the existing transaction ledger. **Savings** are calculated as `unitPrice × quantity − totalCost`; this is descriptive accounting, not a change to charges.
+The report calculates savings from the recorded list value minus the actual charged amount. **Reporting does not change the price or discount settings.** A discount setting of `1` yielded a 100% discount in the verified test; that was intentionally configured by the tester.
 
-## Compatibility
+## Compatibility and verification
 
 | Component | Status |
 | --- | --- |
-| Schedule I v0.4.7f12, IL2CPP | Restocking verified in user-provided October 11 log |
-| MelonLoader v0.7.3 Open-Beta | Used during the verified test |
-| Restocking manager initialization | Verified |
-| Detailed daily report | Observed working in October 11 game log |
-| Oscar in-game phone message | v1.1.7 implementation committed; User confirmed message in-game October 11 |
-| Mono game branch | Not tested for this compatibility fork |
+| Schedule I v0.4.7f12, IL2CPP | Tested |
+| MelonLoader v0.7.3 Open-Beta | Tested |
+| Automatic restocking | Confirmed in-game |
+| Daily detailed report | Confirmed in log |
+| Oscar phone message | Confirmed in-game |
+| Mono branch, multiplayer, later game builds | Not yet verified |
 
-The October 11 log also showed a separate **AutoLaunder** missing-method error; this fork does not fix other mods.
+**October 11, 2026 test:** AutoRestock v1.1.7 initialized, performed restocking and delivered Oscar's message in-game. The test day's report contained 144 transactions, 2,590 units and $31,100 in pre-discount list value; the configured full discount resulted in $0 charged. These are test-session observations, not performance guarantees.
 
-## Build (Windows, IL2CPP)
+## Build from source (Windows, IL2CPP)
 
-Requires the .NET SDK, MelonLoader, and your **own** game-generated IL2CPP reference assemblies. Install and run the game with MelonLoader once to generate assemblies.
+You need the .NET SDK, MelonLoader, and IL2CPP reference assemblies generated from **your own game installation**.
 
-1. Clone this repository and check out `fix/schedule-i-0.4.7`.
-2. Create `AutoRestock/il2cpp_libs` and copy the referenced assemblies from your local game's `MelonLoader/Il2CppAssemblies`, `MelonLoader/net6`, and any other paths required by the project.
-3. Run:
+1. Clone this repository and switch to the `fix/schedule-i-0.4.7` branch.
+2. Place the required game-generated references in `AutoRestock/il2cpp_libs/`, as specified by `AutoRestock.csproj`.
+3. From the repository root, build without the optional packaging/deployment scripts:
 
 ```powershell
 dotnet build .\AutoRestock\AutoRestock.csproj -c IL2CPP -p:SkipModPackaging=true
 ```
 
-4. Find the output at `AutoRestock/bin/IL2CPP/net6/AutoRestockIL2CPP.dll`.
+4. The output is `AutoRestock/bin/IL2CPP/net6/AutoRestockIL2CPP.dll`.
 
-**Do not commit** generated game assemblies, dependencies, binaries, logs, user preferences, or saved games. Do not run the project’s optional `DeployMod.ps1` unless you have reviewed its file-removal behavior.
+Do not commit generated game assemblies, game saves, personal configuration files or build artifacts.
 
-## Installing and testing
+## Installation
 
-1. Back up your game save and currently installed mod.
-2. Close Schedule I, disable the old AutoRestock deployment in Vortex, and deploy that change.
-3. Install just the newly compiled `AutoRestockIL2CPP.dll` in the game's `Mods` folder. Ensure only one active copy exists.
-4. Launch v0.4.7f12, load a save, and test restocking.
-5. Check `MelonLoader/Logs` for `[AutoRestock] AutoRestock manager initialized.`, transaction lines, and the daily receipt after the next in-game day.
-6. Report compile/runtime errors with a fresh MelonLoader log, redacting any personal identifiers.
+1. Back up your current game save and AutoRestock DLL.
+2. Close Schedule I. Disable any previous AutoRestock installation in Vortex and deploy that change.
+3. Copy `AutoRestockIL2CPP.dll` to the game's `Mods` folder, ensuring only one active AutoRestock DLL is installed.
+4. Launch the game and verify AutoRestock displays **v1.1.7** with credit to **lasersquid & AnasaAyatan**.
 
-**Known limitations and cautions:** Phone-message delivery uses an experimental v0.4.7 messaging API call; its compile and runtime behavior remain unverified. The original project has peer-to-peer transaction handling; avoid untrusted multiplayer sessions until sender validation has been audited. Test discount settings carefully, as a discount of `1` was observed yielding zero-cost restocks in the user's prior test.
+## Troubleshooting
 
-## Project history
+Check the newest file in `MelonLoader/Logs`.
 
-- **v1.1.5 (upstream):** Original baseline by lasersquid.
-- **v1.1.6 experimental:** IL2CPP v0.4.7 scene fallback, startup guards, replacement of broken receipt message call with log output, and a detailed reporting update pending runtime validation.
+- `AutoRestock manager initialized.` confirms initialization.
+- `Restocking ...` entries show attempted transactions.
+- `Oscar daily report submitted to phone messaging.` confirms message submission.
+- If the phone report does not appear, check the logged daily receipt and errors.
 
-- **v1.1.7 experimental:** detailed reporting and attempted Oscar phone delivery with a per-conversation identifier; awaiting testing.\n\nSee [CHANGELOG.md](CHANGELOG.md) for update notes and [docs/TESTING.md](docs/TESTING.md) for a validation checklist. Bug reports and pull requests should target the compatibility branch until the changes are proven stable.
+For issues, include the exact game version, reproduction steps and a redacted MelonLoader log.
 
-## Original project links
+## Known limitations
 
-- [Original GitHub source](https://github.com/lasersquid/Sched1AutoRestockMod)
-- [Nexus Mods](https://www.nexusmods.com/schedule1/mods/1235)
-- [Thunderstore IL2CPP](https://thunderstore.io/c/schedule-i/p/lasersquid/AutoRestockIL2CPP/)
-- [Thunderstore Mono](https://thunderstore.io/c/schedule-i/p/lasersquid/AutoRestockMono/)
+The compatibility update has been validated on **v0.4.7f12**, not every game branch or future update. Multiplayer sender validation and additional discount scenarios have not been comprehensively tested.
 
-This fork is an independent compatibility effort and is not an official release of the original mod or the game.
+## Development
 
-## Verified October 11, 2026 runtime test
+- [Changelog](CHANGELOG.md)
+- [Testing checklist](docs/TESTING.md)
+- [Compatibility branch](https://github.com/AnasaAyatan/Sched1AutoRestockMod/tree/fix/schedule-i-0.4.7)
+- [Original source](https://github.com/lasersquid/Sched1AutoRestockMod)
 
-On Schedule I v0.4.7f12 with MelonLoader 0.7.3 Open-Beta, AutoRestock v1.1.7 initialized, completed automatic restocking and generated a detailed report covering 144 transactions, 2,590 units, $31,100 list value and $0 charged (discount setting 1). The log recorded successful submission to Oscar's phone conversation, and the user confirmed that Oscar's message appeared in-game. This verifies the phone messaging path in this game session, not compatibility with future versions or multiplayer. Separate AutoLaunder messaging errors and Van(Clone) component warnings remain outstanding.
+AutoRestock's original design and source are credited to **lasersquid**. The v0.4.7 compatibility update and detailed daily reporting are maintained by **AnasaAyatan**.
