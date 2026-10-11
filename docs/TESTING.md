@@ -18,7 +18,7 @@
 9. Separately test host/client multiplayer only in a trusted session; audit sender authorization before wider distribution.
 
 ## Expected report behavior
-The detailed receipt currently appears in the **MelonLoader log only**. In-game Oscar messaging has not yet been restored. The game's v0.4.7 messaging API must be investigated and tested before enabling phone messages.
+The detailed receipt is always logged. Version 1.1.7 also attempts to send it through Oscar's in-game conversation using the new v0.4.7 messaging API. Verify compilation, in-game delivery, notification behavior and that the daily receipt is not duplicated. If delivery fails, inspect the log fallback.
 
 ## Reporting bugs
 Attach the latest `MelonLoader/Logs` file, game version, MelonLoader version, mod version, reproduction steps, expected and actual results, and relevant configuration (with personal information removed).
