@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<ProjName>AutoRestock</ProjName>
-		<Version>1.1.5</Version>
+		<Version>1.1.7</Version>
 		<GameDir>C:/Program Files (x86)/Steam/steamapps/common/Schedule I</GameDir>
 		<GamePath>$(GameDir)/Schedule I.exe</GamePath>
 		<Configuration>IL2CPP</Configuration>
@@ -188,7 +188,9 @@
 		<NuGetAudit>False</NuGetAudit>
 	</PropertyGroup>
 
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="Powershell ./package_resources/MakeVortexPackage.ps1 -arch $(Configuration) -ver $(Version) -proj $(ProjName)&#xD;&#xA;Powershell ./package_resources/MakeThunderstorePackage.ps1 -arch $(Configuration) -ver $(Version) -proj $(ProjName)&#xD;&#xA;Powershell ./package_resources/DeployMod.ps1 -arch $(Configuration) -proj $(ProjName)&#xD;&#xA;" />
+	<Target Name="PostBuild"
+        	AfterTargets="PostBuildEvent"
+        	Condition="'$(SkipModPackaging)' != 'true'">
+    	<Exec Command="Powershell ./package_resources/MakeVortexPackage.ps1 -arch $(Configuration) -ver $(Version) -proj $(ProjName)&#xD;&#xA;Powershell ./package_resources/MakeThunderstorePackage.ps1 -arch $(Configuration) -ver $(Version) -proj $(ProjName)&#xD;&#xA;Powershell ./package_resources/DeployMod.ps1 -arch $(Configuration) -proj $(ProjName)&#xD;&#xA;" />
 	</Target>
 </Project>

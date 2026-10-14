@@ -10,7 +10,7 @@ using Steamworks;
 using Il2CppSteamworks;
 #endif
 
-[assembly: MelonInfo(typeof(AutoRestock.AutoRestockMod), "AutoRestock", "1.1.5", "lasersquid", null)]
+[assembly: MelonInfo(typeof(AutoRestock.AutoRestockMod), "AutoRestock", "1.1.7", "lasersquid & AnasaAyatan", null)]
 [assembly: MelonGame("TVGS", "Schedule I")]
 
 namespace AutoRestock
@@ -22,6 +22,10 @@ namespace AutoRestock
         public SteamNetworkClient client;
         public CSteamID host;
         public CSteamID self;
+
+        // 0.4.7 fallback: game versions can bypass LoadingScreen.Close.
+        private bool gameplaySceneSeen;
+        private float nextManagerStartupCheck;
 
         public override void OnInitializeMelon()
         {
@@ -35,6 +39,17 @@ namespace AutoRestock
         public override void OnSceneWasInitialized(int buildIndex, string sceneName)
         {
             base.OnSceneWasInitialized(buildIndex, sceneName);
+            if (sceneName.ToLower().Contains("menu"))
+            {
+                gameplaySceneSeen = false;
+                if (Manager.isInitialized)
+                    Manager.Stop();
+            }
+            else
+            {
+                gameplaySceneSeen = true;
+                nextManagerStartupCheck = UnityEngine.Time.realtimeSinceStartup + 5f;
+            }
             if (sceneName.ToLower().Contains("menu"))
             {
                 if (client == null)
@@ -93,6 +108,26 @@ namespace AutoRestock
         {
             base.OnUpdate();
             client?.ProcessIncomingMessages();
+
+            // Fallback for game builds where the original loading-screen Harmony
+            // postfix is not called. Only attempt after a non-menu scene has loaded.
+            if (gameplaySceneSeen && !Manager.isInitialized &&
+                UnityEngine.Time.realtimeSinceStartup >= nextManagerStartupCheck)
+            {
+                nextManagerStartupCheck = UnityEngine.Time.realtimeSinceStartup + 5f;
+                try
+                {
+                    if (Manager.DependenciesReady())
+                    {
+                        LoggerInstance.Msg("Starting AutoRestock manager using v0.4.7 scene fallback.");
+                        Manager.Initialize();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LoggerInstance.Warning($"AutoRestock startup fallback: {ex.Message}");
+                }
+            }
         }
 
         public override void OnDeinitializeMelon()
